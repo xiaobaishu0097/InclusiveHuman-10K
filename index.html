@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InclusiveHuman-10K: Towards Inclusive Human Parsing Beyond the Intact-Limb Assumption</title>
+<meta name="description" content="InclusiveHuman-10K (IH-10K) is the first large-scale human body parsing dataset centered on individuals with limb deficiencies, with pixel-wise labels for residual limbs, prostheses, and mobility assistive devices.">
+<meta property="og:title" content="InclusiveHuman-10K: Towards Inclusive Human Parsing Beyond the Intact-Limb Assumption">
+<meta property="og:description" content="The first large-scale inclusive human parsing benchmark for individuals with limb deficiencies. ECCV 2026.">
+<meta property="og:image" content="static/images/teaser.jpg">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f6f8fa;
+  --ink:#1a2230;
+  --ink-soft:#54617a;
+  --line:#e6eaf0;
+  --accent:#0f8a8a;       /* teal */
+  --accent-2:#e8762b;     /* prosthesis orange */
+  --accent-soft:#e6f3f3;
+  --warn-bg:#fff6ec;
+  --warn-line:#f4cf9e;
+  --radius:16px;
+  --maxw:1080px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.serif{font-family:'Newsreader',Georgia,serif}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
+nav .brand{font-weight:800;letter-spacing:-.02em;font-size:1.02rem}
+nav .brand b{color:var(--accent)}
+nav .links{display:flex;gap:22px;font-size:.92rem;font-weight:500}
+nav .links a{color:var(--ink-soft)}
+nav .links a:hover{color:var(--accent);text-decoration:none}
+@media(max-width:720px){nav .links{display:none}}
+
+/* ---------- hero ---------- */
+header.hero{padding:58px 0 30px;text-align:center;
+  background:radial-gradient(1200px 380px at 50% -120px,var(--accent-soft),transparent)}
+.badge{display:inline-block;font-weight:700;font-size:.8rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+  padding:6px 14px;border-radius:999px;margin-bottom:20px}
+h1.title{font-size:2.55rem;line-height:1.15;letter-spacing:-.025em;margin:.1em 0 .15em;font-weight:800}
+h1.title .hl{color:var(--accent)}
+.subtitle{font-size:1.12rem;color:var(--ink-soft);max-width:760px;margin:6px auto 26px}
+@media(max-width:720px){h1.title{font-size:1.85rem}}
+
+.authors{font-size:1.06rem;margin:8px auto;max-width:820px}
+.authors a{color:var(--ink);font-weight:600}
+.authors sup{color:var(--accent);font-weight:700}
+.affil{color:var(--ink-soft);font-size:.96rem;max-width:820px;margin:10px auto 4px}
+.note{color:var(--ink-soft);font-size:.88rem;margin-top:2px}
+
+/* ---------- buttons ---------- */
+.btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:28px 0 6px}
+.btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:.97rem;
+  padding:11px 20px;border-radius:999px;border:1px solid var(--ink);
+  background:var(--ink);color:#fff;transition:.18s}
+.btn:hover{text-decoration:none;transform:translateY(-2px);box-shadow:0 8px 22px rgba(26,34,48,.16)}
+.btn.alt{background:#fff;color:var(--ink)}
+.btn.accent{background:var(--accent);border-color:var(--accent)}
+.btn.data{background:var(--accent-2);border-color:var(--accent-2)}
+.btn i{font-size:1.05em}
+
+/* ---------- sections ---------- */
+section{padding:52px 0;border-top:1px solid var(--line)}
+section h2{font-size:1.9rem;letter-spacing:-.02em;margin:0 0 6px;font-weight:800}
+section .lead{color:var(--ink-soft);margin:0 0 26px;font-size:1.04rem}
+h2 .k{color:var(--accent)}
+
+figure{margin:0}
+figure img{width:100%;height:auto;display:block;border-radius:var(--radius);
+  border:1px solid var(--line);background:#fff}
+figcaption{color:var(--ink-soft);font-size:.9rem;margin-top:12px;text-align:center}
+figcaption b{color:var(--ink)}
+
+.hero-fig{margin-top:30px}
+
+/* ---------- stat cards ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:6px 0 8px}
+.stat{background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px 16px;text-align:center}
+.stat .num{font-size:2.05rem;font-weight:800;letter-spacing:-.02em;color:var(--accent)}
+.stat .lbl{font-size:.9rem;color:var(--ink-soft);margin-top:2px}
+@media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- abstract ---------- */
+.abstract{font-size:1.06rem;color:#2a3343;max-width:880px;margin:0 auto;text-align:justify}
+.abstract.serif{font-size:1.16rem;line-height:1.7}
+
+/* ---------- contributions ---------- */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;
+  transition:.18s}
+.card:hover{box-shadow:0 10px 30px rgba(26,34,48,.07);transform:translateY(-3px)}
+.card .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent);font-size:1.2rem;margin-bottom:14px}
+.card h3{margin:0 0 6px;font-size:1.08rem}
+.card p{margin:0;color:var(--ink-soft);font-size:.96rem}
+@media(max-width:720px){.cards{grid-template-columns:1fr}}
+
+/* ---------- schema chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 24px}
+.chip{font-size:.86rem;font-weight:600;padding:7px 13px;border-radius:999px;
+  border:1px solid var(--line);background:#fff;color:var(--ink-soft)}
+.chip.c{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+.chip.d{color:var(--accent-2);border-color:var(--warn-line);background:var(--warn-bg)}
+
+/* ---------- tables ---------- */
+.tablecard{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+.tablecard .cap{padding:14px 18px;background:var(--bg-soft);border-bottom:1px solid var(--line);
+  font-size:.92rem;color:var(--ink-soft)}
+.tablecard .cap b{color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:560px}
+th,td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--line)}
+th{background:#fff;font-weight:700;color:var(--ink);font-size:.84rem;text-transform:uppercase;letter-spacing:.03em}
+td:first-child,th:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+.com{color:var(--accent);font-weight:600}
+.dis{color:var(--accent-2);font-weight:600}
+.gap{font-weight:700}
+.sub{font-size:.82em;color:var(--ink-soft)}
+
+/* ---------- access ---------- */
+.access{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:var(--radius);padding:26px}
+.access h3{margin:0 0 8px;display:flex;align-items:center;gap:10px;font-size:1.15rem}
+.access ol{margin:10px 0 16px;padding-left:22px;color:#3a4254}
+.access ol li{margin:7px 0}
+.access .em{font-weight:700;color:var(--accent-2)}
+.access code{background:#fff;border:1px solid var(--warn-line);padding:2px 7px;border-radius:6px;
+  font-size:.9em}
+
+/* ---------- bibtex ---------- */
+pre.bib{background:#0f1622;color:#d6e2f0;border-radius:var(--radius);padding:22px;overflow-x:auto;
+  font-size:.85rem;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.copybtn{float:right;background:#1d2a3d;color:#cfe;border:1px solid #2c3e57;border-radius:8px;
+  padding:5px 12px;font-size:.8rem;cursor:pointer;font-weight:600}
+.copybtn:hover{background:#243349}
+
+/* ---------- footer ---------- */
+footer{padding:40px 0;border-top:1px solid var(--line);color:var(--ink-soft);font-size:.9rem;text-align:center}
+footer a{font-weight:600}
+.lic{display:inline-flex;gap:8px;align-items:center;margin-top:8px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">IH&#8209;10K<b>.</b></div>
+    <div class="links">
+      <a href="#abstract">Abstract</a>
+      <a href="#dataset">Dataset</a>
+      <a href="#schema">Schema</a>
+      <a href="#benchmark">Benchmark</a>
+      <a href="#access">Data Access</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">ECCV 2026</span>
+    <h1 class="title">InclusiveHuman&#8209;10K</h1>
+    <p class="subtitle serif">Towards Inclusive Human Parsing Beyond the Intact&#8209;Limb Assumption</p>
+
+    <div class="authors">
+      <a href="#">Heming Du</a><sup>1,*</sup>,
+      <a href="#">Jiaying Ying</a><sup>1,*</sup>,
+      <a href="#">Xiaofeng Cao</a><sup>2</sup>,
+      <a href="#">Zhu Li</a><sup>3</sup>,
+      <a href="#">Yuanyuan Liu</a><sup>3</sup>,
+      <a href="#">Kaihao Zhang</a><sup>4</sup>,
+      <a href="#">Xin Chen</a><sup>3</sup>,
+      <a href="#">Xin Yu</a><sup>5</sup>
+    </div>
+    <div class="affil">
+      <sup>1</sup>The University of Queensland &nbsp;·&nbsp;
+      <sup>2</sup>Tongji University &nbsp;·&nbsp;
+      <sup>3</sup>Hangzhou Dianzi University &nbsp;·&nbsp;
+      <sup>4</sup>Australian National University &nbsp;·&nbsp;
+      <sup>5</sup>The University of Adelaide
+    </div>
+    <div class="note"><sup>*</sup>Equal contribution</div>
+
+    <div class="btns">
+      <a class="btn accent" href="#access">&#128193;&nbsp; Dataset</a>
+    </div>
+
+    <figure class="hero-fig">
+      <img src="static/images/teaser.jpg" alt="InclusiveHuman-10K teaser: pixel-wise body parsing for individuals with limb deficiencies across everyday, sports, and clinical scenes.">
+      <figcaption><b>InclusiveHuman&#8209;10K (IH&#8209;10K).</b> An inclusive body parsing dataset for individuals with limb deficiencies. Different colors denote different body-part labels. IH&#8209;10K provides pixel&#8209;wise annotations for residual limbs, prosthetic components, and mobility assistive devices, filling a long-standing gap in human parsing benchmarks.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<!-- STATS -->
+<section style="border-top:none;padding-top:34px">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="num">10,555</div><div class="lbl">Images</div></div>
+      <div class="stat"><div class="num">14,939</div><div class="lbl">Person instances</div></div>
+      <div class="stat"><div class="num">160,133</div><div class="lbl">Segmentation masks</div></div>
+      <div class="stat"><div class="num">61</div><div class="lbl">Part classes (27 common + 34 disability)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABSTRACT -->
+<section id="abstract">
+  <div class="wrap">
+    <h2>Abstract</h2>
+    <p class="abstract serif">
+      Human body parsing datasets and benchmarks define part labels for intact anatomies and focus on body parts and clothing.
+      Widely used datasets implicitly assume intact anatomies and therefore do not include residual-limb or prosthetic classes,
+      leaving people with limb deficiencies excluded from model training and standard evaluation &mdash; a fairness gap.
+      We present <b>InclusiveHuman&#8209;10K (IH&#8209;10K)</b>, to the best of our knowledge the <b>first large-scale body parsing dataset
+      centered on individuals with limb deficiencies</b>, thereby enabling inclusive body parsing for the first time.
+      IH&#8209;10K contains more than 10k images and around 15k person instances from everyday, sports, and clinical scenes,
+      each with pixel-wise body parsing masks. We extend conventional body parsing categories with explicit classes for
+      <b>residual limbs, prostheses, and mobility assistive devices</b>, so these regions are named and measured rather than
+      treated as background or noise. To assess whether disability-related regions are systematically underserved,
+      we report group-wise metrics across disability-related and common classes. Our experiments show that supervised models
+      struggle on these regions due to large appearance variation and broken limb structure, while zero-shot methods perform
+      poorly &mdash; suggesting these concepts are absent from previous benchmarks and under-covered in open-vocabulary pretraining.
+      We hope this work helps build vision systems that serve people with limb deficiencies more reliably and fairly.
+    </p>
+  </div>
+</section>
+
+<!-- MOTIVATION -->
+<section id="motivation" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <h2>Why <span class="k">inclusive</span> parsing?</h2>
+    <p class="lead">Existing benchmarks (LIP, CIHP, MHP&nbsp;v2) implicitly assume intact anatomies. Without explicit labels, disability-related regions are absorbed into &ldquo;background&rdquo; &mdash; hiding failures and preventing targeted improvement.</p>
+    <figure>
+      <img src="static/images/sota_failure_cases.jpg" alt="UniParser trained on MHP v2 and CIHP misses residual-limb regions and mislabels prosthetic parts.">
+      <figcaption><b>State-of-the-art parsers fail on limb deficiencies.</b> UniParser trained separately on MHP&nbsp;v2 and CIHP often misses residual-limb regions and mislabels prosthetic parts, because these classes simply do not exist in prior datasets. The WHO estimates that about <b>0.5% of the population</b> needs prosthetic or orthotic services at any time &mdash; tens of millions worldwide.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- CONTRIBUTIONS -->
+<section id="contributions">
+  <div class="wrap">
+    <h2>Contributions</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="ic">&#129513;</div>
+        <h3>A first-of-its-kind dataset</h3>
+        <p>A large-scale body parsing dataset centered on individuals with limb deficiencies, with pixel-wise labels for residual limbs, prosthetic components, and mobility assistive devices.</p>
+      </div>
+      <div class="card">
+        <div class="ic">&#9878;&#65039;</div>
+        <h3>An inclusive benchmark protocol</h3>
+        <p>Subgroup-resolved evaluation over <span class="com">Common</span> and <span class="dis">Disability-Related</span> classes, plus boundary-sensitive metrics, making disparities explicit and comparable.</p>
+      </div>
+      <div class="card">
+        <div class="ic">&#128200;</div>
+        <h3>A broad baseline study</h3>
+        <p>We benchmark strong supervised and zero-shot methods, revealing large and consistent errors on disability-related regions and setting clear targets for future work.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATASET -->
+<section id="dataset" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <h2>The <span class="k">IH&#8209;10K</span> dataset</h2>
+    <p class="lead">Public images sourced from Flickr and Google showing residual limbs, prostheses, or mobility aids across everyday, sports, and clinical scenes &mdash; each person annotated with a pixel-wise parsing mask under a rigorous multi-stage review protocol.</p>
+    <figure>
+      <img src="static/images/dataset_demo.jpg" alt="Example annotated images from IH-10K across everyday, sports, and clinical scenes.">
+      <figcaption><b>Example annotations.</b> IH&#8209;10K covers a wide age range and diverse real-world contexts, with consistent labels across amputation levels and assistive-device settings.</figcaption>
+    </figure>
+
+    <figure style="margin-top:30px">
+      <img src="static/images/dataset_stats.png" alt="Dataset statistics: mask counts per category, distribution of limb deficiencies, and distribution of prosthesis and mobility assistive devices.">
+      <figcaption><b>Dataset statistics.</b> (A) Per-category mask counts on a log scale reveal a long-tail distribution; (B) residual-limb frequencies by segment and laterality, including bilateral cases; (C) the distribution of prostheses and mobility assistive devices. These properties motivate subgroup-resolved and imbalance-aware evaluation.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- SCHEMA -->
+<section id="schema">
+  <div class="wrap">
+    <h2>Category schema</h2>
+    <p class="lead">We follow common human parsing label sets and add disability-related parts so these regions are named and measured rather than merged into the background.</p>
+
+    <h3 style="margin:0 0 8px">Residual-limb granularity</h3>
+    <p style="color:var(--ink-soft);margin:0 0 12px">Four segments per body side &mdash; <b>upper arm</b> and <b>forearm</b> for the upper limb, <b>thigh</b> and <b>lower leg</b> for the lower limb &mdash; with left and right annotated separately, yielding eight segment labels with clear stump boundaries.</p>
+    <div class="chips">
+      <span class="chip d">Left / Right Upper Arm</span>
+      <span class="chip d">Left / Right Forearm</span>
+      <span class="chip d">Left / Right Thigh</span>
+      <span class="chip d">Left / Right Lower Leg</span>
+    </div>
+
+    <h3 style="margin:18px 0 8px">Prosthesis taxonomy</h3>
+    <p style="color:var(--ink-soft);margin:0 0 16px">Following clinical guidance, prostheses are grouped by structural complexity into three levels.</p>
+    <figure>
+      <img src="static/images/prosthesis_types.png" alt="Three prosthesis types: articulated, functional non-articulated, and cosmetic.">
+      <figcaption>
+        <b>Articulated</b> (&ge;1 visible mechanical joint, e.g. knee / ankle / elbow) &nbsp;·&nbsp;
+        <b>Functional non-articulated</b> (single-piece function, e.g. running blades, passive hooks) &nbsp;·&nbsp;
+        <b>Cosmetic</b> (appearance restoration, no articulated joints).
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section id="comparison" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <h2>Compared to prior benchmarks</h2>
+    <p class="lead">IH&#8209;10K is the first human parsing benchmark that labels residual limbs, prosthesis components, and mobility aids &mdash; and the first to support subgroup evaluation over common vs disability-related classes.</p>
+    <div class="tablecard">
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Dataset</th><th>#Images / Frames</th><th>People / sample</th>
+              <th>Residual limb</th><th>Prosthesis parts</th><th>Mobility aids</th><th>Subgroup eval</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PASCAL-Person-Part</td><td>3,533</td><td>2.2</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr><td>ATR</td><td>17,700</td><td>1.0</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr><td>LIP</td><td>50,462</td><td>1.0</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr><td>CIHP</td><td>38,280</td><td>3.4</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr><td>MHP v2</td><td>25,403</td><td>3.0</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr><td>VIP</td><td>21,247</td><td>2.9</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>&#10007;</td></tr>
+            <tr style="background:var(--accent-soft)">
+              <td><b>InclusiveHuman-10K (Ours)</b></td><td><b>10,555</b></td><td>1.4</td>
+              <td class="com">&#10003;</td><td class="com">&#10003;</td><td class="com">&#10003;</td><td class="com">&#10003;</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <figure style="margin-top:8px">
+      <img src="static/images/dataset_comparison.jpg" alt="Label-space comparison highlighting disability-related parts missing in prior datasets.">
+      <figcaption><b>Label-space comparison.</b> Prior datasets omit the disability-related parts that IH&#8209;10K makes explicit.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- BENCHMARK -->
+<section id="benchmark">
+  <div class="wrap">
+    <h2>Benchmark results</h2>
+    <p class="lead">We evaluate fine-tuned parsing, fine-tuned segmentation, and zero-shot segmentation. Across <em>every</em> method, performance on <span class="dis">Disability-Related</span> classes lags far behind <span class="com">Common</span> classes. Each cell shows <b>All</b> with the <span class="com">Common</span>&thinsp;/&thinsp;<span class="dis">Disability</span> breakdown.</p>
+
+    <div class="tablecard">
+      <div class="cap"><b>Fine-tuned body parsing.</b> Dedicated human parsing models on IH&#8209;10K (mIoU, AP<sup>p</sup><sub>50</sub>, PCP).</div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Backbone</th><th>mIoU</th><th>AP<sup>p</sup><sub>50</sub></th><th>PCP</th></tr></thead>
+          <tbody>
+            <tr><td>AIParsing</td><td>ResNet50</td>
+              <td>30.97 <span class="sub"><span class="com">46.34</span>/<span class="dis">17.51</span></span></td>
+              <td>31.70 <span class="sub"><span class="com">46.51</span>/<span class="dis">6.93</span></span></td>
+              <td>35.92 <span class="sub"><span class="com">48.06</span>/<span class="dis">18.81</span></span></td></tr>
+            <tr><td>AIParsing</td><td>ResNet101</td>
+              <td>31.49 <span class="sub"><span class="com">50.78</span>/<span class="dis">15.60</span></span></td>
+              <td>46.77 <span class="sub"><span class="com">59.73</span>/<span class="dis">13.37</span></span></td>
+              <td>48.81 <span class="sub"><span class="com">58.85</span>/<span class="dis">29.62</span></span></td></tr>
+            <tr><td>UniParser</td><td>ResNet50</td>
+              <td>39.06 <span class="sub"><span class="com">56.55</span>/<span class="dis">25.18</span></span></td>
+              <td>43.08 <span class="sub"><span class="com">65.07</span>/<span class="dis">25.62</span></span></td>
+              <td>44.66 <span class="sub"><span class="com">65.16</span>/<span class="dis">28.38</span></span></td></tr>
+            <tr style="background:var(--bg-soft)"><td><b>UniParser</b></td><td>ResNet101</td>
+              <td><b>41.43</b> <span class="sub"><span class="com">58.10</span>/<span class="dis">28.19</span></span></td>
+              <td>45.67 <span class="sub"><span class="com">67.77</span>/<span class="dis">28.11</span></span></td>
+              <td>47.11 <span class="sub"><span class="com">66.76</span>/<span class="dis">31.50</span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tablecard">
+      <div class="cap"><b>Fine-tuned segmentation.</b> Standard semantic segmenters on IH&#8209;10K (mIoU). Disability mIoU is roughly <b>one-third to two-fifths</b> of Common mIoU; scaling backbones helps Common far more than Disability.</div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Backbone</th><th>mIoU (All)</th><th class="com">Common</th><th class="dis">Disability</th><th>BIoU (All)</th></tr></thead>
+          <tbody>
+            <tr><td>FCN</td><td>ResNet101</td><td>21.14</td><td class="com">35.32</td><td class="dis">9.47</td><td>12.82</td></tr>
+            <tr><td>SegFormer</td><td>MIT-B4</td><td>25.56</td><td class="com">40.66</td><td class="dis">12.76</td><td>14.87</td></tr>
+            <tr><td>Mask2Former</td><td>Swin-L</td><td>28.07</td><td class="com">45.05</td><td class="dis">14.09</td><td>19.41</td></tr>
+            <tr style="background:var(--bg-soft)"><td><b>SegNeXt</b></td><td>MSCAN-L</td><td><b>28.19</b></td><td class="com">45.01</td><td class="dis">14.34</td><td>17.78</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tablecard">
+      <div class="cap"><b>Zero-shot segmentation.</b> Text-driven open-vocabulary methods <em>collapse</em> on disability-related classes, while promptable models (SAM / SAM2) produce strong masks once localization is given &mdash; pointing to a <b>recognition &amp; label-alignment bottleneck</b>, not mask quality.</div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Method</th><th>Prompt</th><th>mIoU (All)</th><th class="com">Common</th><th class="dis">Disability</th></tr></thead>
+          <tbody>
+            <tr><td>Grounded-SAM (Huge)</td><td>Text</td><td>6.10</td><td class="com">11.56</td><td class="dis">1.77</td></tr>
+            <tr><td>CLIPSeg</td><td>Text</td><td>2.68</td><td class="com">5.81</td><td class="dis">0.19</td></tr>
+            <tr><td>X-Decoder (Focal-L)</td><td>Text</td><td>1.04</td><td class="com">1.37</td><td class="dis">0.79</td></tr>
+            <tr style="background:var(--bg-soft)"><td><b>SAM2 (Base)</b></td><td>Box</td><td><b>75.84</b></td><td class="com">71.25</td><td class="dis">79.48</td></tr>
+            <tr><td>SAM (Huge)</td><td>Box</td><td>75.55</td><td class="com">73.38</td><td class="dis">77.26</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <figure style="margin-top:26px">
+      <img src="static/images/failure_cases.jpg" alt="Typical failure cases on disability-related regions after fine-tuning.">
+      <figcaption><b>Typical failures.</b> When people occupy few pixels or are occluded, models lose fine limb details and small device parts. Mask2Former often maps prosthetic components to the nearest intact-part label (e.g. calf or shoe), blurring the stump&ndash;prosthesis transition.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- DATA ACCESS -->
+<section id="access">
+  <div class="wrap">
+    <h2>Data access</h2>
+    <p class="lead">IH&#8209;10K is released for <b>non-commercial research only</b>. Access requires an approved request, in line with our institutional Human Research Ethics approval and the licenses of the source images.</p>
+    <div class="access">
+      <h3>&#9993;&#65039; How to request access</h3>
+      <ol>
+        <li><span class="em">Email the authors</span> to apply for permission, stating your name, affiliation, and intended (non-commercial) research use.</li>
+        <li>Once your request is approved, you will be granted access to the dataset on Google Drive.</li>
+        <li>By using the data you agree to the <b>CC BY-NC-SA 4.0</b> license and the restrictions below.</li>
+      </ol>
+      <div class="btns" style="justify-content:flex-start;margin:6px 0 4px">
+        <a class="btn data" href="mailto:heming.du@uq.edu.au?subject=IH-10K%20Dataset%20Access%20Request&body=Name%3A%0AAffiliation%3A%0AIntended%20research%20use%3A%0A">&#128231;&nbsp; Request access by email</a>
+        <a class="btn alt" href="https://drive.google.com/drive/folders/1kpdpEo1WG7CgheHFZFPR9Dv1-MI6nkwj?usp=sharing">&#128193;&nbsp; Google Drive (permission required)</a>
+      </div>
+      <p style="margin:14px 0 0;font-size:.92rem;color:#6a5333">
+        &#8505;&#65039; Opening the Drive link before approval will show a request-access prompt &mdash; you must email first.
+        IH&#8209;10K <b>must not</b> be used for biometric identification (face recognition / re-identification) or for medical diagnosis or clinical decision making.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- BIBTEX -->
+<section id="bibtex" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <h2>BibTeX</h2>
+    <p class="lead">If you find IH&#8209;10K useful, please consider citing our work.</p>
+    <pre class="bib" id="bibtex-code"><button class="copybtn" onclick="copyBib()">Copy</button>@inproceedings{du2026inclusivehuman,
+  title     = {InclusiveHuman-10K: Towards Inclusive Human Parsing
+               Beyond the Intact-Limb Assumption},
+  author    = {Du, Heming and Ying, Jiaying and Cao, Xiaofeng and
+               Li, Zhu and Liu, Yuanyuan and Zhang, Kaihao and
+               Chen, Xin and Yu, Xin},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2026}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>InclusiveHuman&#8209;10K &middot; ECCV 2026 &middot; The University of Queensland and collaborators</p>
+    <p class="lic">Data and code released under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a></p>
+    <p style="margin-top:10px;font-size:.84rem">For dataset access or takedown requests, contact <a href="mailto:heming.du@uq.edu.au">heming.du@uq.edu.au</a>.</p>
+  </div>
+</footer>
+
+<script>
+function copyBib(){
+  var txt = document.getElementById('bibtex-code').innerText.replace(/^Copy\s*/,'');
+  navigator.clipboard.writeText(txt).then(function(){
+    var b=document.querySelector('.copybtn');b.textContent='Copied!';
+    setTimeout(function(){b.textContent='Copy';},1600);
+  });
+}
+</script>
+</body>
+</html>

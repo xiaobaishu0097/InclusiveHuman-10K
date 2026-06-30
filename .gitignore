@@ -1,0 +1,27 @@
+# Claude Code / assistant tooling
+.claude/
+CLAUDE.md
+.claude.json
+*.claude
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Python (figure conversion scripts, etc.)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Temp / scratch
+*.tmp
+*.log
+scratchpad/
+tmp/
